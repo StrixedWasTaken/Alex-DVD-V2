@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -55,6 +55,14 @@
   let celebrating = false;
   let backgroundMusicStarted = false;
 
+  // Start background music muted and try autoplay
+  backgroundMusic.volume = 0;
+  backgroundMusic.muted = true;
+  backgroundMusic.loop = true;
+  backgroundMusic.play().catch(() => {
+    console.log('Autoplay prevented by browser.');
+  });
+
   function updatePosition() {
     if (celebrating) {
       requestAnimationFrame(updatePosition);
@@ -64,17 +72,39 @@
     posX += speedX;
     posY += speedY;
 
-    if (posX + width > window.innerWidth || posX < 0) {
+    let hitCorner = false;
+
+    if (posX + width > window.innerWidth) {
       speedX = -speedX;
-      posX = Math.min(Math.max(posX, 0), window.innerWidth - width);
+      posX = window.innerWidth - width;
+    } else if (posX < 0) {
+      speedX = -speedX;
+      posX = 0;
     }
-    if (posY + height > window.innerHeight || posY < 0) {
+
+    if (posY + height > window.innerHeight) {
       speedY = -speedY;
-      posY = Math.min(Math.max(posY, 0), window.innerHeight - height);
+      posY = window.innerHeight - height;
+    } else if (posY < 0) {
+      speedY = -speedY;
+      posY = 0;
+    }
+
+    const atLeft = posX === 0;
+    const atRight = posX === window.innerWidth - width;
+    const atTop = posY === 0;
+    const atBottom = posY === window.innerHeight - height;
+
+    if ((atLeft && atTop) || (atLeft && atBottom) || (atRight && atTop) || (atRight && atBottom)) {
+      hitCorner = true;
     }
 
     dvdLogo.style.left = posX + 'px';
     dvdLogo.style.top = posY + 'px';
+
+    if (hitCorner) {
+      celebrate();
+    }
 
     requestAnimationFrame(updatePosition);
   }
@@ -95,29 +125,18 @@
     }, 1250);
   }
 
-  // Starts background music on first user interaction
-  function startBackgroundMusic() {
+  window.addEventListener('click', () => {
     if (!backgroundMusicStarted) {
+      backgroundMusic.muted = false;
       backgroundMusic.volume = 0.5;
       backgroundMusic.play().catch(() => {
-        console.log('Background music playback was prevented.');
+        console.log('Background music play failed.');
       });
       backgroundMusicStarted = true;
-      window.removeEventListener('click', startBackgroundMusic);
-      window.removeEventListener('keydown', startBackgroundMusic);
     }
-  }
-
-  window.addEventListener('click', (event) => {
-    startBackgroundMusic();
     celebrate();
   });
 
-  window.addEventListener('keydown', (event) => {
-    startBackgroundMusic();
-  });
-
-  // Initialize DVD logo position and start animation loop
   dvdLogo.style.left = posX + 'px';
   dvdLogo.style.top = posY + 'px';
   updatePosition();
