@@ -1,0 +1,132 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DVD Bounce with Celebration and Background Music</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    height: 100vh;
+  }
+  #dvdLogo {
+    position: fixed;
+    width: 200px;
+    height: 150px;
+    user-select: none;
+    pointer-events: none;
+  }
+  #celebrationLogo {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: 1000;
+  }
+</style>
+</head>
+<body>
+
+<img id="dvdLogo" src="dvd_logo.png" alt="DVD Logo" />
+<img id="celebrationLogo" src="shiestyalex.png" alt="Celebration Logo" />
+
+<audio id="backgroundMusic" src="lumber_tycoon2_shop.mp3" loop preload="auto"></audio>
+<audio id="celebrationMusic" src="celebration_music.mp3" preload="auto"></audio>
+
+<script>
+  const dvdLogo = document.getElementById('dvdLogo');
+  const celebrationLogo = document.getElementById('celebrationLogo');
+  const backgroundMusic = document.getElementById('backgroundMusic');
+  const celebrationMusic = document.getElementById('celebrationMusic');
+
+  const width = 200;
+  const height = 150;
+
+  let posX = 10;
+  let posY = 10;
+
+  let speedX = 4;
+  let speedY = 3;
+
+  let celebrating = false;
+  let backgroundMusicStarted = false;
+
+  function updatePosition() {
+    if (celebrating) {
+      requestAnimationFrame(updatePosition);
+      return; // pause movement while celebrating
+    }
+
+    posX += speedX;
+    posY += speedY;
+
+    if (posX + width > window.innerWidth || posX < 0) {
+      speedX = -speedX;
+      posX = Math.min(Math.max(posX, 0), window.innerWidth - width);
+    }
+    if (posY + height > window.innerHeight || posY < 0) {
+      speedY = -speedY;
+      posY = Math.min(Math.max(posY, 0), window.innerHeight - height);
+    }
+
+    dvdLogo.style.left = posX + 'px';
+    dvdLogo.style.top = posY + 'px';
+
+    requestAnimationFrame(updatePosition);
+  }
+
+  function celebrate() {
+    if (celebrating) return;
+    celebrating = true;
+
+    celebrationMusic.volume = 1.0;
+    celebrationMusic.currentTime = 0;
+    celebrationMusic.play();
+
+    celebrationLogo.style.display = 'block';
+
+    setTimeout(() => {
+      celebrationLogo.style.display = 'none';
+      celebrating = false;
+    }, 1250);
+  }
+
+  // Starts background music on first user interaction
+  function startBackgroundMusic() {
+    if (!backgroundMusicStarted) {
+      backgroundMusic.volume = 0.5;
+      backgroundMusic.play().catch(() => {
+        console.log('Background music playback was prevented.');
+      });
+      backgroundMusicStarted = true;
+      window.removeEventListener('click', startBackgroundMusic);
+      window.removeEventListener('keydown', startBackgroundMusic);
+    }
+  }
+
+  window.addEventListener('click', (event) => {
+    startBackgroundMusic();
+    celebrate();
+  });
+
+  window.addEventListener('keydown', (event) => {
+    startBackgroundMusic();
+  });
+
+  // Initialize DVD logo position and start animation loop
+  dvdLogo.style.left = posX + 'px';
+  dvdLogo.style.top = posY + 'px';
+  updatePosition();
+
+  window.addEventListener('resize', () => {
+    posX = Math.min(posX, window.innerWidth - width);
+    posY = Math.min(posY, window.innerHeight - height);
+  });
+</script>
+
+</body>
+</html>
