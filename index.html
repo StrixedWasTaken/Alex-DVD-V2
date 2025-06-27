@@ -1,39 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>DVD Bounce with Celebration and Background Music</title>
-<style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: black;
-    height: 100vh;
-  }
-  #dvdLogo {
-    position: fixed;
-    width: 200px;
-    height: 150px;
-    user-select: none;
-    pointer-events: none;
-  }
-  #celebrationLogo {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    z-index: 1000;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Alex DVD V2</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      height: 100vh;
+    }
+
+    #dvdLogo {
+      position: fixed;
+      width: 200px;
+      height: 150px;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    #celebrationLogo {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 1000;
+    }
+
+    /* 📱 Mobile override */
+    @media (max-width: 768px) {
+      #dvdLogo {
+        width: 25vw;
+        height: auto;
+      }
+    }
+  </style>
 </head>
 <body>
 
 <img id="dvdLogo" src="dvd_logo.png" alt="DVD Logo" />
 <img id="celebrationLogo" src="shiestyalex.png" alt="Celebration Logo" />
-
 <audio id="backgroundMusic" src="lumber_tycoon2_shop.mp3" loop preload="auto"></audio>
 <audio id="celebrationMusic" src="celebration_music.mp3" preload="auto"></audio>
 
@@ -43,66 +52,54 @@
   const backgroundMusic = document.getElementById('backgroundMusic');
   const celebrationMusic = document.getElementById('celebrationMusic');
 
-  const width = 200;
-  const height = 150;
-
   let posX = 10;
   let posY = 10;
-
   let speedX = 4;
   let speedY = 3;
-
   let celebrating = false;
-  let backgroundMusicStarted = false;
+  let bgStarted = false;
+  let isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-  // Start background music muted and try autoplay
+  // ⏯️ Attempt autoplay muted
   backgroundMusic.volume = 0;
   backgroundMusic.muted = true;
   backgroundMusic.loop = true;
   backgroundMusic.play().catch(() => {
-    console.log('Autoplay prevented by browser.');
+    console.log("Autoplay failed, waiting for user interaction.");
   });
 
+  // 📦 Position DVD logo
   function updatePosition() {
     if (celebrating) {
       requestAnimationFrame(updatePosition);
-      return; // pause movement while celebrating
+      return;
     }
+
+    let logoWidth = dvdLogo.offsetWidth;
+    let logoHeight = dvdLogo.offsetHeight;
 
     posX += speedX;
     posY += speedY;
 
-    let hitCorner = false;
-
-    if (posX + width > window.innerWidth) {
+    if (posX + logoWidth > window.innerWidth || posX < 0) {
       speedX = -speedX;
-      posX = window.innerWidth - width;
-    } else if (posX < 0) {
-      speedX = -speedX;
-      posX = 0;
+      posX = Math.min(Math.max(posX, 0), window.innerWidth - logoWidth);
     }
-
-    if (posY + height > window.innerHeight) {
+    if (posY + logoHeight > window.innerHeight || posY < 0) {
       speedY = -speedY;
-      posY = window.innerHeight - height;
-    } else if (posY < 0) {
-      speedY = -speedY;
-      posY = 0;
-    }
-
-    const atLeft = posX === 0;
-    const atRight = posX === window.innerWidth - width;
-    const atTop = posY === 0;
-    const atBottom = posY === window.innerHeight - height;
-
-    if ((atLeft && atTop) || (atLeft && atBottom) || (atRight && atTop) || (atRight && atBottom)) {
-      hitCorner = true;
+      posY = Math.min(Math.max(posY, 0), window.innerHeight - logoHeight);
     }
 
     dvdLogo.style.left = posX + 'px';
     dvdLogo.style.top = posY + 'px';
 
-    if (hitCorner) {
+    // 🎉 Detect corner hit
+    const atLeft = posX === 0;
+    const atRight = posX === window.innerWidth - logoWidth;
+    const atTop = posY === 0;
+    const atBottom = posY === window.innerHeight - logoHeight;
+
+    if ((atLeft && atTop) || (atLeft && atBottom) || (atRight && atTop) || (atRight && atBottom)) {
       celebrate();
     }
 
@@ -118,33 +115,46 @@
     celebrationMusic.play();
 
     celebrationLogo.style.display = 'block';
-
     setTimeout(() => {
       celebrationLogo.style.display = 'none';
       celebrating = false;
     }, 1250);
   }
 
-  window.addEventListener('click', () => {
-    if (!backgroundMusicStarted) {
+  function startBackgroundMusic() {
+    if (!bgStarted) {
       backgroundMusic.muted = false;
       backgroundMusic.volume = 0.5;
       backgroundMusic.play().catch(() => {
-        console.log('Background music play failed.');
+        console.log("Playback still blocked.");
       });
-      backgroundMusicStarted = true;
+      bgStarted = true;
     }
+  }
+
+  // 🎮 Interaction handler for mobile/desktop
+  function handleInteraction() {
+    startBackgroundMusic();
     celebrate();
+  }
+
+  // 📱 Touch for mobile, click for desktop
+  if (isMobile) {
+    window.addEventListener("touchstart", handleInteraction);
+  } else {
+    window.addEventListener("click", handleInteraction);
+  }
+
+  // 🖥️ On resize
+  window.addEventListener("resize", () => {
+    posX = Math.min(posX, window.innerWidth - dvdLogo.offsetWidth);
+    posY = Math.min(posY, window.innerHeight - dvdLogo.offsetHeight);
   });
 
+  // 🏁 Start
   dvdLogo.style.left = posX + 'px';
   dvdLogo.style.top = posY + 'px';
   updatePosition();
-
-  window.addEventListener('resize', () => {
-    posX = Math.min(posX, window.innerWidth - width);
-    posY = Math.min(posY, window.innerHeight - height);
-  });
 </script>
 
 </body>
